@@ -206,6 +206,28 @@
   .bd-fill{ height:100%; background:var(--teal); }
   .bd-fig{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); width:52px; text-align:right; }
 
+  /* ---------- List view ---------- */
+  .list-item{
+    background:var(--paper); border-radius:16px; padding:22px 24px; box-shadow:var(--shadow);
+    border:1px solid var(--line); margin-bottom:14px;
+  }
+  .list-item .li-meta{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .list-item .li-opts{ margin-top:2px; }
+  .list-item .opt{ margin-bottom:8px; cursor:default; }
+  .list-item .opt:hover{ border-color:var(--line); background:var(--paper); }
+  .list-item .explain-box{ display:block; margin-top:14px; }
+  .list-count{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft); margin-bottom:16px;
+  }
+  .set-card .s-check{
+    position:absolute; top:10px; right:10px; width:18px; height:18px; border-radius:5px;
+    border:1.5px solid var(--line); background:var(--paper); display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:#fff; transition:all .12s;
+  }
+  .set-card{ position:relative; }
+  .set-card.selected .s-check{ background:var(--teal); border-color:var(--teal); }
+  .set-card.selected .s-check::after{ content:'✓'; }
+
   .hidden{ display:none !important; }
 
   @media (max-width:520px){
@@ -238,14 +260,18 @@
       </div>
       <div class="mode-btn" data-mode="flash">
         <div class="m-title">Flashcards</div>
-        <div class="m-sub">Question first, tap to reveal the answer</div>
+        <div class="m-sub">Tap once for options, tap again for the answer</div>
+      </div>
+      <div class="mode-btn" data-mode="list">
+        <div class="m-title">List view</div>
+        <div class="m-sub">See every question, its options, and the answer at once</div>
       </div>
     </div>
 
-    <div class="section-label">Practice set</div>
+    <div class="section-label">Practice set <span style="text-transform:none;letter-spacing:0;color:var(--ink-soft);font-weight:500;">(select one or more)</span></div>
     <div class="set-grid" id="set-grid"></div>
 
-    <div class="section-label">Section (optional filter)</div>
+    <div class="section-label">Section (optional filter) <span style="text-transform:none;letter-spacing:0;color:var(--ink-soft);font-weight:500;">(select one or more)</span></div>
     <div class="filter-chip-row" id="section-chips">
       <div class="chip active" data-sec="all">All sections</div>
       <div class="chip" data-sec="English">General English</div>
@@ -297,9 +323,10 @@
     </div>
     <div class="flash-wrap">
       <div class="flash" id="flash-card">
-        <span class="flip-hint" id="flip-hint">tap to reveal</span>
+        <span class="flip-hint" id="flip-hint">tap to reveal options</span>
         <div class="f-tag" id="f-tag">General English</div>
         <div class="f-q" id="f-q">Question text</div>
+        <div id="f-opts-wrap" class="hidden" style="margin-top:18px;"></div>
         <div id="f-answer-wrap" class="hidden">
           <div class="f-a"><span class="lead" id="f-lead"></span> <span id="f-a-text"></span></div>
           <div class="f-exp" id="f-exp"></div>
@@ -309,6 +336,18 @@
     <div class="nav-row">
       <button class="nav-btn" id="f-prev">Previous</button>
       <button class="nav-btn primary" id="f-next">Next card</button>
+    </div>
+  </div>
+
+  <!-- ============ LIST SCREEN ============ -->
+  <div id="list-screen" class="hidden">
+    <div class="session-bar">
+      <a class="back-link" id="list-exit">&larr; Back to sets</a>
+    </div>
+    <div class="list-count" id="list-count">100 questions</div>
+    <div id="list-wrap"></div>
+    <div class="nav-row">
+      <button class="nav-btn primary" id="list-home">Back to sets</button>
     </div>
   </div>
 
@@ -332,8 +371,8 @@ const DATA = [{"title": "Practice Set 1", "questions": [{"num": 1, "question": "
 
 let state = {
   mode: 'quiz',
-  setIndex: null,
-  section: 'all',
+  setIndexes: [],
+  sections: ['all'],
   order: 'sequential',
   pool: [],
   idx: 0,
@@ -347,11 +386,16 @@ function buildSetGrid(){
     const card = document.createElement('div');
     card.className = 'set-card';
     card.dataset.idx = i;
-    card.innerHTML = `<div class="s-num">${(i+1).toString().padStart(2,'0')}</div><div class="s-name">${s.title}</div><div class="s-score">100 questions</div>`;
+    card.innerHTML = `<div class="s-check"></div><div class="s-num">${(i+1).toString().padStart(2,'0')}</div><div class="s-name">${s.title}</div><div class="s-score">100 questions</div>`;
     card.addEventListener('click', () => {
-      document.querySelectorAll('.set-card').forEach(c=>c.classList.remove('selected'));
-      card.classList.add('selected');
-      state.setIndex = i;
+      const pos = state.setIndexes.indexOf(i);
+      if(pos === -1){
+        state.setIndexes.push(i);
+        card.classList.add('selected');
+      } else {
+        state.setIndexes.splice(pos, 1);
+        card.classList.remove('selected');
+      }
       updateStartBtn();
     });
     grid.appendChild(card);
@@ -360,12 +404,13 @@ function buildSetGrid(){
 
 function updateStartBtn(){
   const btn = document.getElementById('start-btn');
-  if(state.setIndex !== null){
+  const modeLabel = state.mode === 'quiz' ? 'quiz' : (state.mode === 'flash' ? 'flashcards' : 'list view');
+  if(state.setIndexes.length > 0){
     btn.disabled = false;
-    btn.textContent = state.mode === 'quiz' ? 'Start quiz' : 'Start flashcards';
+    btn.textContent = 'Start ' + modeLabel + (state.setIndexes.length > 1 ? ' (' + state.setIndexes.length + ' sets)' : '');
   } else {
     btn.disabled = true;
-    btn.textContent = 'Choose a practice set to begin';
+    btn.textContent = 'Choose at least one practice set to begin';
   }
 }
 
@@ -380,9 +425,31 @@ document.querySelectorAll('.mode-btn').forEach(b=>{
 
 document.querySelectorAll('#section-chips .chip').forEach(c=>{
   c.addEventListener('click', ()=>{
-    document.querySelectorAll('#section-chips .chip').forEach(x=>x.classList.remove('active'));
-    c.classList.add('active');
-    state.section = c.dataset.sec;
+    const sec = c.dataset.sec;
+    if(sec === 'all'){
+      state.sections = ['all'];
+      document.querySelectorAll('#section-chips .chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      return;
+    }
+    // remove 'all' when picking a specific section
+    if(state.sections.includes('all')){
+      state.sections = [];
+      document.querySelector('#section-chips .chip[data-sec="all"]').classList.remove('active');
+    }
+    const pos = state.sections.indexOf(sec);
+    if(pos === -1){
+      state.sections.push(sec);
+      c.classList.add('active');
+    } else {
+      state.sections.splice(pos, 1);
+      c.classList.remove('active');
+    }
+    // if nothing left selected, fall back to 'all'
+    if(state.sections.length === 0){
+      state.sections = ['all'];
+      document.querySelector('#section-chips .chip[data-sec="all"]').classList.add('active');
+    }
   });
 });
 
@@ -404,15 +471,28 @@ function shuffleArr(arr){
 }
 
 function screen(name){
-  ['home','quiz-screen','flash-screen','results-screen'].forEach(id=>{
+  ['home','quiz-screen','flash-screen','list-screen','results-screen'].forEach(id=>{
     document.getElementById(id).classList.toggle('hidden', id !== name);
   });
 }
 
+function buildPool(){
+  let pool = [];
+  state.setIndexes.forEach(i=>{
+    const setTitle = DATA[i].title;
+    DATA[i].questions.forEach(q=>{
+      pool.push(Object.assign({}, q, { setTitle }));
+    });
+  });
+  if(!state.sections.includes('all')){
+    pool = pool.filter(q => state.sections.includes(q.section));
+  }
+  return pool;
+}
+
 document.getElementById('start-btn').addEventListener('click', ()=>{
-  if(state.setIndex === null) return;
-  let pool = DATA[state.setIndex].questions.slice();
-  if(state.section !== 'all') pool = pool.filter(q => q.section === state.section);
+  if(state.setIndexes.length === 0) return;
+  let pool = buildPool();
   if(state.order === 'shuffle') pool = shuffleArr(pool);
   state.pool = pool;
   state.idx = 0;
@@ -420,16 +500,19 @@ document.getElementById('start-btn').addEventListener('click', ()=>{
   if(state.mode === 'quiz'){
     screen('quiz-screen');
     renderQuiz();
-  } else {
+  } else if(state.mode === 'flash'){
     screen('flash-screen');
     renderFlash();
+  } else {
+    screen('list-screen');
+    renderList();
   }
 });
 
 /* ---------------- QUIZ ---------------- */
 function renderQuiz(){
   const q = state.pool[state.idx];
-  document.getElementById('q-tag').textContent = q.section;
+  document.getElementById('q-tag').textContent = (state.setIndexes.length > 1 ? q.setTitle + ' · ' : '') + q.section;
   document.getElementById('q-num').textContent = 'Q' + q.num;
   document.getElementById('q-text').textContent = q.question;
   document.getElementById('quiz-count').textContent = (state.idx+1) + ' / ' + state.pool.length;
@@ -527,17 +610,62 @@ document.getElementById('r-retry').addEventListener('click', ()=>{
 });
 document.getElementById('r-home').addEventListener('click', ()=> screen('home'));
 
+/* ---------------- LIST VIEW ---------------- */
+function renderList(){
+  const wrap = document.getElementById('list-wrap');
+  wrap.innerHTML = '';
+  document.getElementById('list-count').textContent = state.pool.length + ' question' + (state.pool.length===1?'':'s');
+  state.pool.forEach((q, i)=>{
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    const setLabel = state.setIndexes.length > 1 ? (q.setTitle + ' · ') : '';
+    let optsHtml = '';
+    ['a','b','c','d'].forEach(k=>{
+      const isCorrect = q.correct === k;
+      optsHtml += `<div class="opt${isCorrect ? ' correct-answer':''}"><span class="k">${k}</span><span class="t">${q.options[k]}</span></div>`;
+    });
+    item.innerHTML = `
+      <div class="li-meta">
+        <span class="qtag">${setLabel}${q.section}</span>
+        <span class="qnum">Q${q.num}</span>
+      </div>
+      <p class="qtext">${q.question}</p>
+      <div class="li-opts">${optsHtml}</div>
+      <div class="explain-box show">
+        <span class="lbl">${q.flagged ? 'Note' : 'Why'}</span>
+        <span>${q.explanation || ''}</span>
+      </div>
+    `;
+    wrap.appendChild(item);
+  });
+}
+
+document.getElementById('list-exit').addEventListener('click', ()=> screen('home'));
+document.getElementById('list-home').addEventListener('click', ()=> screen('home'));
+
 /* ---------------- FLASHCARDS ---------------- */
-let flipped = false;
+// flashStage: 0 = question only, 1 = options revealed, 2 = answer revealed
+let flashStage = 0;
 function renderFlash(){
-  flipped = false;
+  flashStage = 0;
   const q = state.pool[state.idx];
-  document.getElementById('f-tag').textContent = q.section;
+  document.getElementById('f-tag').textContent = (state.setIndexes.length > 1 ? q.setTitle + ' · ' : '') + q.section;
   document.getElementById('f-q').textContent = q.question;
   document.getElementById('flash-count').textContent = (state.idx+1) + ' / ' + state.pool.length;
   document.getElementById('flash-progress').style.width = (((state.idx)/state.pool.length)*100) + '%';
+  document.getElementById('f-opts-wrap').classList.add('hidden');
   document.getElementById('f-answer-wrap').classList.add('hidden');
-  document.getElementById('flip-hint').textContent = 'tap to reveal';
+  document.getElementById('flip-hint').textContent = 'tap to reveal options';
+
+  const optsWrap = document.getElementById('f-opts-wrap');
+  optsWrap.innerHTML = '';
+  ['a','b','c','d'].forEach(k=>{
+    const opt = document.createElement('div');
+    opt.className = 'opt';
+    opt.dataset.k = k;
+    opt.innerHTML = `<span class="k">${k}</span><span class="t">${q.options[k]}</span>`;
+    optsWrap.appendChild(opt);
+  });
 
   if(q.correct){
     document.getElementById('f-lead').textContent = q.correct.toUpperCase() + ')';
@@ -550,9 +678,27 @@ function renderFlash(){
 }
 
 document.getElementById('flash-card').addEventListener('click', ()=>{
-  flipped = !flipped;
-  document.getElementById('f-answer-wrap').classList.toggle('hidden', !flipped);
-  document.getElementById('flip-hint').textContent = flipped ? 'tap to hide' : 'tap to reveal';
+  const q = state.pool[state.idx];
+  if(flashStage === 0){
+    flashStage = 1;
+    document.getElementById('f-opts-wrap').classList.remove('hidden');
+    document.getElementById('flip-hint').textContent = 'tap to reveal answer';
+  } else if(flashStage === 1){
+    flashStage = 2;
+    document.getElementById('f-answer-wrap').classList.remove('hidden');
+    document.getElementById('flip-hint').textContent = 'tap to hide';
+    if(q.correct){
+      document.querySelectorAll('#f-opts-wrap .opt').forEach(opt=>{
+        if(opt.dataset.k === q.correct) opt.classList.add('correct-answer');
+      });
+    }
+  } else {
+    flashStage = 0;
+    document.getElementById('f-opts-wrap').classList.add('hidden');
+    document.getElementById('f-answer-wrap').classList.add('hidden');
+    document.querySelectorAll('#f-opts-wrap .opt').forEach(opt=> opt.classList.remove('correct-answer'));
+    document.getElementById('flip-hint').textContent = 'tap to reveal options';
+  }
 });
 
 document.getElementById('f-next').addEventListener('click', ()=>{
