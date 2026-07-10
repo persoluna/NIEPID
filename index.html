@@ -6,8 +6,7 @@
 <title>NIEPID B.Ed Special Education — Entrance Prep</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Courier+Prime:wght@400;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
-<!-- redeploy -->
-  <style>
+<style>
   :root{
     --bg: #DCD5C3;
     --paper: #F4EFE1;
@@ -24,6 +23,7 @@
     --wrong: #8C2E22;
     --wrong-bg: #F1DCD3;
     --shadow: 1px 2px 0 rgba(28,26,21,0.05), 3px 4px 0 rgba(28,26,21,0.06);
+    --font-read: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -138,7 +138,7 @@
   .set-card .s-name{ font-size:12px; color:var(--ink-soft); }
   .set-card .s-score{ font-family:'Courier Prime',monospace; font-size:10.5px; color:var(--red); margin-top:2px; text-transform:uppercase; }
   .s-count-row{
-    display:flex; align-items:center; gap:6px; margin-top:4px; cursor:default;
+    display:flex; align-items:center; gap:6px; margin-top:4px; cursor:default; flex-wrap:wrap;
   }
   .s-count-input{
     width:44px; padding:3px 5px; border:1px solid var(--line-strong); border-bottom:1.5px solid var(--ink);
@@ -146,7 +146,24 @@
     color:var(--ink); text-align:center; -moz-appearance:textfield;
   }
   .s-count-input:focus{ outline:none; border-color:var(--red); }
+  .s-count-input.hint-blink{
+    animation: inputHintBlink 1.6s ease-in-out infinite;
+  }
+  @keyframes inputHintBlink{
+    0%,100%{ border-color:var(--line-strong); box-shadow:none; }
+    50%{ border-color:var(--red); box-shadow:0 0 0 3px rgba(140,46,34,0.16); }
+  }
   .s-count-max{ font-family:'Courier Prime',monospace; font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; }
+
+  .tap-hint{
+    display:inline-flex; align-items:center; font-family:'Courier Prime',monospace;
+    font-size:10px; color:var(--red); text-transform:uppercase; letter-spacing:0.07em;
+    animation: tapHintBlink 1.6s ease-in-out infinite;
+  }
+  @keyframes tapHintBlink{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.22; }
+  }
 
   .filter-chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
   .chip{
@@ -194,7 +211,7 @@
     border:1px solid var(--line-strong);
   }
   .qnum{ font-family:'Special Elite',serif; font-size:15px; color:var(--ink); }
-  .qtext{ font-family:'Noto Serif',serif; font-size:18px; font-weight:500; line-height:1.55; margin:0 0 22px; color:var(--ink); text-align:justify; }
+  .qtext{ font-family:var(--font-read); font-size:17px; font-weight:400; line-height:1.6; margin:0 0 22px; color:var(--ink); text-align:left; }
 
   .opt{
     display:flex; align-items:flex-start; gap:12px; padding:12px 15px; border-radius:2px; border:1.5px solid var(--line-strong);
@@ -206,7 +223,7 @@
     width:22px; flex-shrink:0; text-align:center;
   }
   .opt .k::before{ content:'('; } .opt .k::after{ content:')'; }
-  .opt .t{ font-size:14px; color:var(--ink); font-family:'Noto Serif',serif; }
+  .opt .t{ font-size:14.5px; color:var(--ink); font-family:var(--font-read); line-height:1.45; }
   .opt.correct-answer{ border-color:var(--correct); background:var(--correct-bg); position:relative; }
   .opt.correct-answer .k{ color:var(--correct); }
   .opt.correct-answer::after{
@@ -223,7 +240,7 @@
   .explain-box{
     margin-top:18px; padding:14px 18px; border-radius:0; background:transparent; border:none;
     border-left:3px solid var(--red); font-size:14.5px; color:var(--red); display:none;
-    font-family:'Caveat', cursive; line-height:1.4;
+    font-family:var(--font-read); line-height:1.5;
   }
   .explain-box.show{ display:block; }
   .explain-box .lbl{
@@ -261,10 +278,10 @@
     font-family:'Courier Prime',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.07em;
     color:var(--ink); font-weight:700; margin-bottom:14px;
   }
-  .flash .f-q{ font-family:'Noto Serif',serif; font-size:19px; font-weight:500; line-height:1.55; color:var(--ink); }
-  .flash .f-a{ font-size:14.5px; color:var(--ink); margin-top:16px; font-family:'Noto Serif',serif; }
+  .flash .f-q{ font-family:var(--font-read); font-size:18px; font-weight:400; line-height:1.6; color:var(--ink); }
+  .flash .f-a{ font-size:14.5px; color:var(--ink); margin-top:16px; font-family:var(--font-read); }
   .flash .f-a .lead{ font-weight:700; color:var(--correct); font-family:'Courier Prime',monospace; }
-  .flash .f-exp{ font-size:15px; color:var(--red); margin-top:10px; font-family:'Caveat',cursive; }
+  .flash .f-exp{ font-size:14.5px; color:var(--red); margin-top:10px; font-family:var(--font-read); line-height:1.5; }
 
   /* ---------- Results ---------- */
   .results{
@@ -309,6 +326,21 @@
   .set-card.selected .s-check::after{ content:'✓'; }
 
   .hidden{ display:none !important; }
+
+  /* ---------- Bottom dock (shown outside the home screen) ---------- */
+  .bottom-dock{
+    position:fixed; left:0; right:0; bottom:0; z-index:70;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:11px 16px; background:var(--paper-deep); border-top:1.5px solid var(--ink);
+    box-shadow:0 -6px 16px rgba(28,26,21,0.14);
+  }
+  .dock-home-btn{
+    font-family:'Courier Prime',monospace; font-size:12.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.07em; padding:10px 26px; border:1.5px solid var(--ink); border-radius:2px;
+    background:var(--paper); color:var(--ink); cursor:pointer; transition:background .12s, color .12s;
+  }
+  .dock-home-btn:hover{ background:var(--ink); color:var(--paper); }
+  body.dock-active{ padding-bottom:64px; }
 
   /* ========== RESPONSIVE ========== */
 
@@ -368,6 +400,9 @@
 
     .start-btn{ padding:14px; font-size:13px; }
 
+    .dock-home-btn{ padding:9px 18px; font-size:11.5px; }
+    body.dock-active{ padding-bottom:56px; }
+
     .session-bar{ gap:8px; margin-bottom:14px; }
     .back-link{ font-size:11.5px; }
     .session-count{ font-size:11px; }
@@ -419,6 +454,9 @@
 </head>
 <body>
 <div class="scroll-progress"><div class="scroll-progress-fill" id="scroll-progress-fill"></div></div>
+<div class="bottom-dock hidden" id="bottom-dock">
+  <button class="dock-home-btn" id="dock-home-btn">&laquo; Back to Practice Sets</button>
+</div>
 <div class="wrap">
 
   <div class="top">
@@ -578,6 +616,15 @@ let state = {
   answers: {},
 };
 
+function hintAlreadySeen(){
+  try{ return localStorage.getItem('niepid_count_hint_seen') === '1'; }
+  catch(e){ return false; }
+}
+function markHintSeen(){
+  try{ localStorage.setItem('niepid_count_hint_seen', '1'); }
+  catch(e){ /* private browsing / storage unavailable — hint just won't persist */ }
+}
+
 function buildSetGrid(){
   const grid = document.getElementById('set-grid');
   grid.innerHTML = '';
@@ -610,6 +657,17 @@ function buildSetGrid(){
       state.setCounts[i] = val;
       updateStartBtn();
     });
+    if(i === 0 && !hintAlreadySeen()){
+      input.classList.add('hint-blink');
+      const hint = document.createElement('span');
+      hint.className = 'tap-hint';
+      hint.setAttribute('aria-hidden','true');
+      hint.textContent = 'editable';
+      card.querySelector('.s-count-row').appendChild(hint);
+      const dismissHint = () => { hint.remove(); input.classList.remove('hint-blink'); markHintSeen(); };
+      input.addEventListener('focus', dismissHint, { once:true });
+      input.addEventListener('click', dismissHint, { once:true });
+    }
     grid.appendChild(card);
   });
 }
@@ -715,6 +773,9 @@ function screen(name){
   ['home','quiz-screen','flash-screen','list-screen','results-screen'].forEach(id=>{
     document.getElementById(id).classList.toggle('hidden', id !== name);
   });
+  document.getElementById('bottom-dock').classList.toggle('hidden', name === 'home');
+  document.body.classList.toggle('dock-active', name !== 'home');
+  document.querySelector('.top').classList.toggle('hidden', name !== 'home');
   window.scrollTo(0,0);
   updateScrollProgress();
 }
@@ -967,6 +1028,7 @@ document.getElementById('f-prev').addEventListener('click', ()=>{
   if(state.idx > 0){ state.idx--; renderFlash(); }
 });
 document.getElementById('flash-exit').addEventListener('click', ()=> screen('home'));
+document.getElementById('dock-home-btn').addEventListener('click', ()=> screen('home'));
 
 /* ---------------- SCROLL PROGRESS RAIL ---------------- */
 function updateScrollProgress(){
